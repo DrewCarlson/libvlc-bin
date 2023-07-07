@@ -1,0 +1,59 @@
+name: Package libvlc
+
+on:
+  push:
+    tags: ['*']
+
+jobs:
+  package-libvlc:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Extract tag from GITHUB_REF
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+    - name: Download Binaries
+      run: |
+        curl -LOSs https://get.videolan.org/vlc/${{ env.VERSION }}/macosx/vlc-${{ env.VERSION }}-arm64.dmg
+        curl -LOSs https://get.videolan.org/vlc/${{ env.VERSION }}/macosx/vlc-${{ env.VERSION }}-intel64.dmg
+        curl -LOSs https://get.videolan.org/vlc/${{ env.VERSION }}/win64/vlc-${{ env.VERSION }}-win64.zip
+
+    - name: Extract files
+      run: |
+        mkdir macos-arm64 macos-intel64 win64
+
+        hdiutil attach -quiet -nobrowse -mountpoint arm64_mount vlc-${{ env.VERSION }}-arm64.dmg
+        ditto arm64_mount/VLC.app/Contents/MacOS/lib macos-arm64/
+        ditto arm64_mount/VLC.app/Contents/MacOS/plugins macos-arm64/plugins
+        hdiutil detach arm64_mount
+
+        hdiutil attach -quiet -nobrowse -mountpoint intel64_mount vlc-${{ env.VERSION }}-intel64.dmg
+        ditto intel64_mount/VLC.app/Contents/MacOS/lib macos-intel64/
+        ditto intel64_mount/VLC.app/Contents/MacOS/plugins macos-intel64/plugins
+        hdiutil detach intel64_mount
+
+        unzip vlc-${{ env.VERSION }}-win64.zip -d win64-extracted
+        mv win64-extracted/vlc-${{ env.VERSION }}/libvlc* win64/
+        mv win64-extracted/vlc-${{ env.VERSION }}/plugins win64/plugins
+
+    - name: Create ZIPs
+      run: |
+        cd macos-arm64
+        zip -r ../macos-arm64.zip *
+        cd ../macos-intel64
+        zip -r ../macos-intel64.zip *
+        cd ../win64
+        zip -r ../win64.zip *
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          macos-arm64.zip
+          macos-intel64.zip
+          win64.zip

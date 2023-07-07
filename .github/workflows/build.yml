@@ -30,11 +30,15 @@ jobs:
         ditto arm64_mount/VLC.app/Contents/MacOS/lib macos-arm64/
         ditto arm64_mount/VLC.app/Contents/MacOS/plugins macos-arm64/plugins
         hdiutil detach arm64_mount
+        mv macos-arm64/libvlc.*.dylib macos-arm64/libvlc.dylib
+        mv macos-arm64/libvlccore.*.dylib macos-arm64/libvlccore.dylib
 
         hdiutil attach -quiet -nobrowse -mountpoint intel64_mount vlc-${{ env.VERSION }}-intel64.dmg
         ditto intel64_mount/VLC.app/Contents/MacOS/lib macos-intel64/
         ditto intel64_mount/VLC.app/Contents/MacOS/plugins macos-intel64/plugins
         hdiutil detach intel64_mount
+        mv macos-intel64/libvlc.*.dylib macos-intel64/libvlc.dylib
+        mv macos-intel64/libvlccore.*.dylib macos-intel64/libvlccore.dylib
 
         unzip vlc-${{ env.VERSION }}-win64.zip -d win64-extracted
         mv win64-extracted/vlc-${{ env.VERSION }}/libvlc* win64/
